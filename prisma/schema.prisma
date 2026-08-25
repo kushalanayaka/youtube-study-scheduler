@@ -1,0 +1,72 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String         @id @default(uuid())
+  name           String
+  email          String         @unique
+  passwordHash   String
+  telegramChatId String?        @unique
+  telegramLinked Boolean        @default(false)
+  emailVerified  Boolean        @default(false)
+  timezone       String         @default("Asia/Kolkata")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  courses        Course[]
+  studyTasks     StudyTask[]
+  notifications  Notification[]
+}
+
+model Course {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  studyTasks  StudyTask[]
+}
+
+model StudyTask {
+  id             String         @id @default(uuid())
+  courseId       String
+  course         Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject        String
+  topic          String
+  youtubeUrl     String
+  youtubeVideoId String
+  scheduledDate  DateTime
+  scheduledTime  String
+  duration       Int            @default(30)
+  status         String         @default("PENDING")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  notifications  Notification[]
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  taskId      String
+  task        StudyTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel     String    @default("TELEGRAM")
+  destination String
+  scheduledAt DateTime
+  status      String    @default("PENDING")
+  attempts    Int       @default(0)
+  errorLog    String?
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
