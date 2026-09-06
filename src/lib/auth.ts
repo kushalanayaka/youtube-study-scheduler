@@ -3,9 +3,11 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "fallback-secret-for-development-key-32-chars-long!"
-);
+function getJwtSecret(): Uint8Array {
+  const raw = process.env.JWT_SECRET || "fallback-secret-for-development-key-32-chars-long!";
+  const safeSecret = raw.length >= 32 ? raw : raw.padEnd(32, "x");
+  return new TextEncoder().encode(safeSecret);
+}
 
 const TOKEN_COOKIE_NAME = "token";
 
@@ -22,12 +24,12 @@ export async function signToken(payload: { userId: string; email: string }): Pro
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(token: string) {
   try {
-    const verified = await jwtVerify(token, JWT_SECRET);
+    const verified = await jwtVerify(token, getJwtSecret());
     return verified.payload as { userId: string; email: string };
   } catch {
     return null;
@@ -40,12 +42,12 @@ export async function signResetToken(payload: { userId: string; email: string; p
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("1h")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyResetToken(token: string) {
   try {
-    const verified = await jwtVerify(token, JWT_SECRET);
+    const verified = await jwtVerify(token, getJwtSecret());
     return verified.payload as { userId: string; email: string; pwdVer?: string };
   } catch {
     return null;
