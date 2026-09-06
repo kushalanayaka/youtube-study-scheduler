@@ -16,7 +16,15 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
+  if (!password || !hash || typeof hash !== "string" || !hash.startsWith("$")) {
+    return false;
+  }
+  try {
+    return await bcrypt.compare(password, hash);
+  } catch (err) {
+    console.error("[verifyPassword Error]:", err);
+    return false;
+  }
 }
 
 export async function signToken(payload: { userId: string; email: string }): Promise<string> {
