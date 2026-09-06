@@ -3,7 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
-const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/youtube_study_scheduler";
+const rawConnectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/youtube_study_scheduler";
+const connectionString = rawConnectionString.replace(/[\?&]channel_binding=[^&]+/g, "").replace(/\?$/, "");
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
