@@ -10,8 +10,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
     }
 
+    const cleanEmail = email.toLowerCase().trim();
+
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: cleanEmail },
     });
 
     if (existingUser) {
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: {
         name,
-        email: email.toLowerCase().trim(),
+        email: cleanEmail,
         passwordHash,
         timezone: timezone || "Asia/Kolkata",
       },
@@ -50,8 +52,8 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (err: any) {
+  } catch (err) {
     console.error("Register Error:", err);
-    return NextResponse.json({ error: "Failed to register user", details: String(err?.stack || err?.message || err) }, { status: 500 });
+    return NextResponse.json({ error: "Failed to register user" }, { status: 500 });
   }
 }
