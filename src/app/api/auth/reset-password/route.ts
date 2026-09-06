@@ -30,6 +30,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
+    // Verify token single-use check (if pwdVer exists in payload, ensure password was not changed since token generation)
+    if (payload.pwdVer && user.passwordHash.slice(-12) !== payload.pwdVer) {
+      return NextResponse.json(
+        { error: "This password reset link has already been used. Please request a new one." },
+        { status: 400 }
+      );
+    }
+
     // Hash new password and update database
     const newPasswordHash = await hashPassword(newPassword);
 

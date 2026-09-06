@@ -31,11 +31,11 @@ export default function ForgotPasswordPage() {
 
       setMessage({
         type: "success",
-        text: `Password reset link generated for ${email}. Check your inbox or click below to proceed!`,
+        text: data.message || "If an account exists for this email, a password reset link has been sent to your inbox.",
       });
 
-      if (data.resetLink) {
-        setResetLink(data.resetLink);
+      if (data.debugResetLink) {
+        setResetLink(data.debugResetLink);
       }
     } catch (err) {
       setMessage({
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
           </div>
           <h1 className="text-2xl font-black text-slate-900">Reset Your Password</h1>
           <p className="text-xs text-slate-500">
-            Enter your registered Gmail or email address and we&apos;ll send you a password reset link.
+            Enter your registered email address and we&apos;ll send you a password reset link.
           </p>
         </div>
 
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. kushal2097@gmail.com"
+                placeholder="e.g. yourname@example.com"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
               />
             </div>
@@ -100,7 +100,7 @@ export default function ForgotPasswordPage() {
 
         {resetLink && (
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-center">
-            <p className="text-[11px] font-bold text-slate-600 uppercase">Direct Reset Link Preview</p>
+            <p className="text-[11px] font-bold text-slate-600 uppercase">[Local Dev Only] Reset Link Preview</p>
             <a
               href={resetLink}
               className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 underline break-all"

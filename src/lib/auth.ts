@@ -34,8 +34,9 @@ export async function verifyToken(token: string) {
   }
 }
 
-export async function signResetToken(payload: { userId: string; email: string }): Promise<string> {
-  return new SignJWT(payload)
+export async function signResetToken(payload: { userId: string; email: string; passwordHash: string }): Promise<string> {
+  const pwdVer = payload.passwordHash.slice(-12);
+  return new SignJWT({ userId: payload.userId, email: payload.email, pwdVer })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("1h")
@@ -45,7 +46,7 @@ export async function signResetToken(payload: { userId: string; email: string })
 export async function verifyResetToken(token: string) {
   try {
     const verified = await jwtVerify(token, JWT_SECRET);
-    return verified.payload as { userId: string; email: string };
+    return verified.payload as { userId: string; email: string; pwdVer?: string };
   } catch {
     return null;
   }

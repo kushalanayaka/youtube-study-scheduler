@@ -70,6 +70,7 @@ export async function sendPasswordResetEmail({
   resetLink: string;
 }): Promise<{ success: boolean; error?: string }> {
   const resendApiKey = process.env.RESEND_API_KEY;
+  const fromAddress = process.env.EMAIL_FROM || "Study Scheduler <onboarding@resend.dev>";
 
   if (resendApiKey) {
     try {
@@ -80,7 +81,7 @@ export async function sendPasswordResetEmail({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Study Scheduler <support@resend.dev>",
+          from: fromAddress,
           to: [toEmail],
           subject: "🔐 Reset Your Password - YouTube Study Scheduler",
           html: `
@@ -92,7 +93,7 @@ export async function sendPasswordResetEmail({
                   Reset Password Now
                 </a>
               </p>
-              <p style="color: #64748b; font-size: 12px;">This link is valid for 1 hour. If you did not request a password reset, please ignore this email.</p>
+              <p style="margin: 16px 0; color: #64748b; font-size: 12px;">This link is valid for 1 hour. If you did not request a password reset, please ignore this email.</p>
               <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
               <p style="color: #94a3b8; font-size: 11px;">Or copy and paste this URL into your browser:<br/><a href="${resetLink}" style="color: #dc2626;">${resetLink}</a></p>
             </div>
@@ -104,13 +105,16 @@ export async function sendPasswordResetEmail({
         return { success: true };
       } else {
         const errorData = await res.json();
+        console.error("[Resend Password Reset Error]:", errorData);
         return { success: false, error: JSON.stringify(errorData) };
       }
     } catch (err) {
-      return { success: false, error: String(err) };
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error("[Resend Network Error]:", errorMsg);
+      return { success: false, error: errorMsg };
     }
   }
 
-  console.log(`[Email Reset Link Mock] Sent to ${toEmail}: ${resetLink}`);
-  return { success: true };
+  console.warn(`[Email Reset Link Log (No RESEND_API_KEY set)] Sent to ${toEmail}: ${resetLink}`);
+  return { success: false, error: "RESEND_API_KEY is not configured" };
 }
