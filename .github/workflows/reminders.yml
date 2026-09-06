@@ -1,0 +1,16 @@
+name: Study Reminders Cron Worker
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Reminders Endpoint
+        run: |
+          curl -s -S -X GET "https://youtube-study-scheduler.onrender.com/api/cron/reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
