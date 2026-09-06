@@ -50,8 +50,8 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Register Error:", err);
-    return NextResponse.json({ error: "Failed to register user" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to register user", details: String(err?.stack || err?.message || err) }, { status: 500 });
   }
 }
