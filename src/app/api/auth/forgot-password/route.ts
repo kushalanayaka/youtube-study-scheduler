@@ -22,12 +22,14 @@ export async function POST(req: Request) {
       const token = await signResetToken({
         userId: user.id,
         email: user.email,
-        passwordHash: user.passwordHash,
+        passwordHash: user.passwordHash || "",
       });
 
       const host = req.headers.get("host") || "youtube-study-scheduler.onrender.com";
       const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+      const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const isValidAppUrl = Boolean(rawAppUrl && (rawAppUrl.startsWith("http://") || rawAppUrl.startsWith("https://")));
+      const baseUrl = isValidAppUrl && rawAppUrl ? rawAppUrl : `${protocol}://${host}`;
       const resetLink = `${baseUrl.replace(/\/$/, "")}/reset-password?token=${token}`;
 
       // Dispatch password reset email via Resend
@@ -47,15 +49,15 @@ export async function POST(req: Request) {
       const token = await signResetToken({
         userId: user.id,
         email: user.email,
-        passwordHash: user.passwordHash,
+        passwordHash: user.passwordHash || "",
       });
       const host = req.headers.get("host") || "localhost:3000";
       responsePayload.debugResetLink = `http://${host}/reset-password?token=${token}`;
     }
 
     return NextResponse.json(responsePayload);
-  } catch (err: any) {
+  } catch (err) {
     console.error("Forgot password server error:", err);
-    return NextResponse.json({ error: "Failed to process password reset request.", debugError: String(err?.stack || err?.message || err) }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process password reset request." }, { status: 500 });
   }
 }

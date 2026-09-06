@@ -34,8 +34,8 @@ export async function verifyToken(token: string) {
   }
 }
 
-export async function signResetToken(payload: { userId: string; email: string; passwordHash: string }): Promise<string> {
-  const pwdVer = payload.passwordHash.slice(-12);
+export async function signResetToken(payload: { userId: string; email: string; passwordHash?: string }): Promise<string> {
+  const pwdVer = (payload.passwordHash || "").slice(-12);
   return new SignJWT({ userId: payload.userId, email: payload.email, pwdVer })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
