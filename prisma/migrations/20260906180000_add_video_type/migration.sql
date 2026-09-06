@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "StudyTask" ADD COLUMN "videoType" TEXT NOT NULL DEFAULT 'YOUTUBE';
