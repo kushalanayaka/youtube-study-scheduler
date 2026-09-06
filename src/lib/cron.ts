@@ -73,6 +73,7 @@ export async function processDueReminders() {
         youtubeUrl: task.youtubeUrl,
         scheduledTime: task.scheduledTime,
         taskId: task.id,
+        videoType: task.videoType,
       });
 
       if (telegramResult.success) {
@@ -91,6 +92,7 @@ export async function processDueReminders() {
         topic: task.topic,
         youtubeUrl: task.youtubeUrl,
         scheduledTime: task.scheduledTime,
+        videoType: task.videoType,
       });
 
       if (emailResult.success) {

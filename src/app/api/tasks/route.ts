@@ -5,6 +5,8 @@ import { extractYouTubeVideoId, getYouTubeMetadata } from "@/lib/youtube";
 import { parseLocalISOToDate } from "@/lib/timezone";
 import { processDueReminders } from "@/lib/cron";
 
+import { detectVideoProvider } from "@/lib/gdrive";
+
 export async function GET(req: Request) {
   const user = await getCurrentUser();
   if (!user) {
@@ -47,23 +49,29 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { courseId, subject, topic, youtubeUrl, scheduledDate, scheduledTime, duration } = await req.json();
+    const { courseId, subject, topic, youtubeUrl, videoUrl, scheduledDate, scheduledTime, duration } = await req.json();
+    const rawUrl = videoUrl || youtubeUrl;
 
-    if (!courseId || !subject || !topic || !youtubeUrl || !scheduledDate || !scheduledTime) {
+    if (!courseId || !subject || !topic || !rawUrl || !scheduledDate || !scheduledTime) {
       return NextResponse.json(
-        { error: "Course, subject, topic, YouTube URL, date, and time are required" },
+        { error: "Course, subject, topic, video URL, date, and time are required" },
         { status: 400 }
       );
     }
 
-    const videoId = extractYouTubeVideoId(youtubeUrl);
-    if (!videoId) {
-      return NextResponse.json({ error: "Invalid YouTube video URL" }, { status: 400 });
+    const { provider, videoId, watchUrl } = detectVideoProvider(rawUrl);
+    if (!videoId || provider === "UNKNOWN") {
+      return NextResponse.json({ error: "Invalid YouTube or Google Drive video URL" }, { status: 400 });
     }
 
-    // Try fetching title/thumbnail via oEmbed metadata
-    const metadata = await getYouTubeMetadata(youtubeUrl, `${subject} - ${topic}`);
-    const finalTopic = metadata?.title || topic;
+    let finalTopic = topic;
+    let finalUrl = watchUrl;
+
+    if (provider === "YOUTUBE") {
+      const metadata = await getYouTubeMetadata(rawUrl, `${subject} - ${topic}`);
+      if (metadata?.title) finalTopic = metadata.title;
+      if (metadata?.url) finalUrl = metadata.url;
+    }
 
     // Calculate exact scheduledAt UTC timestamp based on user's timezone
     const scheduledDateTime = parseLocalISOToDate(
@@ -78,7 +86,8 @@ export async function POST(req: Request) {
         courseId,
         subject,
         topic: finalTopic,
-        youtubeUrl: metadata?.url || youtubeUrl,
+        videoType: provider,
+        youtubeUrl: finalUrl,
         youtubeVideoId: videoId,
         scheduledDate: new Date(scheduledDate),
         scheduledTime,

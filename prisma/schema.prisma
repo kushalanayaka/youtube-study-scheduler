@@ -43,6 +43,7 @@ model StudyTask {
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject        String
   topic          String
+  videoType      String         @default("YOUTUBE")
   youtubeUrl     String
   youtubeVideoId String
   scheduledDate  DateTime

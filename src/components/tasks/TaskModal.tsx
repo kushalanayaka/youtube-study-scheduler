@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { X, CheckCircle, SkipForward, Clock, ExternalLink, Trash2, BookOpen, FileText, Copy, Check } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 
+import { GoogleDriveIcon } from "@/components/ui/GoogleDriveIcon";
+import { YouTubeIcon } from "@/components/ui/YouTubeIcon";
+
 export interface TaskModalData {
   id: string;
   subject: string;
@@ -13,6 +16,7 @@ export interface TaskModalData {
   scheduledDate: string;
   scheduledTime: string;
   status: "PENDING" | "COMPLETED" | "SKIPPED";
+  videoType?: string;
   course?: { name: string };
 }
 
@@ -37,6 +41,11 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
   }, [task]);
 
   if (!task) return null;
+
+  const isGDrive = task.videoType === "GDRIVE" || task.youtubeUrl.includes("drive.google.com");
+  const embedSrc = isGDrive
+    ? `https://drive.google.com/file/d/${task.youtubeVideoId}/preview`
+    : `https://www.youtube.com/embed/${task.youtubeVideoId}?autoplay=0`;
 
   const handleNotesChange = (val: string) => {
     setStudyNotes(val);
@@ -86,7 +95,7 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
   const handleCopyLink = () => {
     navigator.clipboard.writeText(task.youtubeUrl);
     setCopied(true);
-    showToast("YouTube URL copied to clipboard", "info");
+    showToast(`${isGDrive ? "Google Drive" : "YouTube"} link copied to clipboard`, "info");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -96,9 +105,20 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
         {/* Header */}
         <div className="p-4 sm:p-6 bg-slate-900 text-white flex items-start justify-between">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-bold text-red-400 uppercase tracking-wider">
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>{task.course?.name || task.subject}</span>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+              {isGDrive ? (
+                <span className="flex items-center gap-1.5 text-blue-400">
+                  <GoogleDriveIcon className="w-4 h-4" />
+                  <span>Google Drive Video</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-red-400">
+                  <YouTubeIcon className="w-4 h-4" />
+                  <span>YouTube Video</span>
+                </span>
+              )}
+              <span>•</span>
+              <span className="text-slate-300 font-semibold">{task.course?.name || task.subject}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white line-clamp-1">{task.topic}</h2>
             <div className="flex items-center gap-4 text-xs text-slate-300">
@@ -133,7 +153,7 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
           {/* Video Embed */}
           <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-inner w-full shrink-0">
             <iframe
-              src={`https://www.youtube.com/embed/${task.youtubeVideoId}?autoplay=0`}
+              src={embedSrc}
               title={task.topic}
               className="w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -144,7 +164,7 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
           {/* Quick Study Notes */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-red-600" />
+              <FileText className="w-4 h-4 text-slate-700" />
               <span>Quick Study Notes &amp; Formulas</span>
             </label>
             <textarea
@@ -152,7 +172,7 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
               placeholder="Write down key formulas, concepts, or timestamp notes for revision..."
               value={studyNotes}
               onChange={(e) => handleNotesChange(e.target.value)}
-              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-sans focus:outline-none focus:ring-2 focus:ring-red-500 text-slate-800"
+              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-sans focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
             />
             <p className="text-[11px] text-slate-400">Notes are saved automatically in your browser.</p>
           </div>
@@ -197,7 +217,7 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopyLink}
-              title="Copy YouTube Link"
+              title={`Copy ${isGDrive ? "Google Drive" : "YouTube"} Link`}
               className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold hover:text-slate-900 bg-white hover:bg-slate-100 px-3 py-2 rounded-xl border border-slate-200 transition-colors shadow-xs"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -208,13 +228,15 @@ export default function TaskModal({ task, onClose, onStatusChange, onDelete }: T
               href={task.youtubeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-red-600 font-semibold hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl border border-red-200 transition-colors shadow-xs"
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors shadow-xs ${
+                isGDrive
+                  ? "text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                  : "text-red-600 bg-red-50 hover:bg-red-100 border-red-200"
+              }`}
             >
-              <span>Open on YouTube</span>
+              <span>{isGDrive ? "Open in Google Drive" : "Open on YouTube"}</span>
               <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-
-            {onDelete && (
+            </a>            {onDelete && (
               <button
                 disabled={loading}
                 onClick={handleDelete}

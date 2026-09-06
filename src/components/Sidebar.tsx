@@ -13,6 +13,9 @@ import {
   X,
 } from "lucide-react";
 
+import { HardDrive } from "lucide-react";
+import { GoogleDriveIcon } from "@/components/ui/GoogleDriveIcon";
+
 interface SidebarProps {
   mobileMenuOpen?: boolean;
   onCloseMobileMenu?: () => void;
@@ -26,7 +29,8 @@ export default function Sidebar({ mobileMenuOpen, onCloseMobileMenu }: SidebarPr
     { name: "Calendar", href: "/calendar", icon: CalendarIcon },
     { name: "Courses", href: "/courses", icon: BookOpen },
     { name: "Add Single Video", href: "/tasks/create", icon: PlusCircle },
-    { name: "Bulk Schedule", href: "/tasks/bulk-schedule", icon: ListPlus },
+    { name: "YouTube Bulk Schedule", href: "/tasks/bulk-schedule", icon: ListPlus },
+    { name: "GDrive Study Planner", href: "/tasks/gdrive-planner", icon: HardDrive },
     { name: "Connect Telegram", href: "/connect-telegram", icon: Send },
     { name: "Profile", href: "/profile", icon: User },
   ];

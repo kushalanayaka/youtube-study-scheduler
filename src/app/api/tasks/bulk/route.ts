@@ -6,6 +6,8 @@ import { parseLocalISOToDate } from "@/lib/timezone";
 import { processDueReminders } from "@/lib/cron";
 import { addDays } from "date-fns";
 
+import { detectVideoProvider } from "@/lib/gdrive";
+
 export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) {
@@ -19,19 +21,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Course, subject, and start date are required" }, { status: 400 });
     }
 
-    // Extract raw URLs from text or array
-    let rawUrls: string[] = [];
+    // Extract raw lines from text or array
+    let rawLines: string[] = [];
     if (Array.isArray(urlsArray)) {
-      rawUrls = urlsArray;
+      rawLines = urlsArray;
     } else if (typeof urlsText === "string") {
-      rawUrls = urlsText
+      rawLines = urlsText
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
     }
 
-    if (rawUrls.length === 0) {
-      return NextResponse.json({ error: "At least one YouTube URL must be provided" }, { status: 400 });
+    if (rawLines.length === 0) {
+      return NextResponse.json({ error: "At least one video URL must be provided" }, { status: 400 });
     }
 
     const perDay = Math.max(1, parseInt(videosPerDay || "1", 10));
@@ -43,18 +45,40 @@ export async function POST(req: Request) {
     const notificationDestination = user.telegramChatId || user.email;
     const notificationChannel = user.telegramLinked && user.telegramChatId ? "TELEGRAM" : "EMAIL";
 
-    for (let i = 0; i < rawUrls.length; i++) {
-      const url = rawUrls[i];
-      const videoId = extractYouTubeVideoId(url);
-      if (!videoId) continue; // Skip invalid URLs
+    let validIndex = 0;
 
-      const dayOffset = Math.floor(i / perDay);
-      const slotIndex = i % perDay;
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      let customTopic: string | null = null;
+      let url = line;
+
+      // Handle custom title formatting: "Topic Title | Video URL" or "Subject | Topic | URL"
+      if (line.includes("|")) {
+        const parts = line.split("|").map((p) => p.trim());
+        if (parts.length >= 2) {
+          url = parts[parts.length - 1];
+          customTopic = parts.slice(0, parts.length - 1).join(" - ");
+        }
+      }
+
+      const { provider, videoId, watchUrl } = detectVideoProvider(url);
+      if (!videoId || provider === "UNKNOWN") continue; // Skip invalid URLs
+
+      const dayOffset = Math.floor(validIndex / perDay);
+      const slotIndex = validIndex % perDay;
       const scheduledTime = slots[slotIndex % slots.length] || "19:00";
       const targetDate = addDays(baseStartDate, dayOffset);
 
-      const metadata = await getYouTubeMetadata(url, `${subject} Session ${i + 1}`);
-      const topic = metadata?.title || `${subject} - Video ${i + 1}`;
+      let topic = customTopic || `${subject} - Video ${validIndex + 1}`;
+      let finalUrl = watchUrl;
+
+      if (provider === "YOUTUBE") {
+        const metadata = await getYouTubeMetadata(url, topic);
+        if (metadata?.title && !customTopic) topic = metadata.title;
+        if (metadata?.url) finalUrl = metadata.url;
+      } else if (provider === "GDRIVE" && !customTopic) {
+        topic = `${subject} - Drive Lecture ${validIndex + 1}`;
+      }
 
       const dateStr = targetDate.toISOString().split("T")[0];
       const scheduledDateTime = parseLocalISOToDate(
@@ -69,7 +93,8 @@ export async function POST(req: Request) {
           courseId,
           subject,
           topic,
-          youtubeUrl: metadata?.url || `https://www.youtube.com/watch?v=${videoId}`,
+          videoType: provider,
+          youtubeUrl: finalUrl,
           youtubeVideoId: videoId,
           scheduledDate: targetDate,
           scheduledTime,
@@ -90,6 +115,7 @@ export async function POST(req: Request) {
       });
 
       createdTasks.push(task);
+      validIndex++;
     }
 
     // Asynchronously trigger due reminders without blocking bulk schedule response

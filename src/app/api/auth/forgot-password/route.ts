@@ -18,19 +18,19 @@ export async function POST(req: Request) {
     });
 
     if (!user) {
-      // For security, do not leak whether an email exists or not
-      return NextResponse.json({
-        success: true,
-        message: "If that email is registered, a password reset link has been generated.",
-      });
+      return NextResponse.json(
+        { error: `No account found with email "${cleanEmail}". Please check your email or register.` },
+        { status: 404 }
+      );
     }
 
     // Generate 1-hour valid token
     const token = await signResetToken({ userId: user.id, email: user.email });
 
     const host = req.headers.get("host") || "localhost:3000";
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const resetLink = `${protocol}://${host}/reset-password?token=${token}`;
+    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+    const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
     // Send email
     await sendPasswordResetEmail({ toEmail: user.email, resetLink });
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: `Password reset link generated for ${user.email}`,
-      resetLink, // Included for development convenience
+      resetLink,
     });
   } catch (err) {
     console.error("Forgot password error:", err);

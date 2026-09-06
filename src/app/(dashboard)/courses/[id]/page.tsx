@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, PlusCircle, ListPlus, Calendar, Clock, ExternalLink, Search, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, PlusCircle, ListPlus, Calendar, Clock, ExternalLink, Search, CheckCircle2, HardDrive } from "lucide-react";
 import TaskModal, { TaskModalData } from "@/components/tasks/TaskModal";
 import { useToast } from "@/components/ui/Toast";
+import { GoogleDriveIcon } from "@/components/ui/GoogleDriveIcon";
+import { YouTubeIcon } from "@/components/ui/YouTubeIcon";
 
 interface TaskItem {
   id: string;
@@ -16,6 +18,7 @@ interface TaskItem {
   scheduledDate: string;
   scheduledTime: string;
   status: "PENDING" | "COMPLETED" | "SKIPPED";
+  videoType?: string;
 }
 
 interface CourseDetail {
@@ -163,20 +166,27 @@ export default function CourseDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <Link
             href={`/tasks/create?courseId=${course.id}`}
-            className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors shadow-xs"
+            className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl transition-colors shadow-xs"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Add Single Task</span>
           </Link>
           <Link
             href={`/tasks/bulk-schedule?courseId=${course.id}`}
-            className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors shadow-xs"
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl transition-colors shadow-xs"
           >
             <ListPlus className="w-4 h-4" />
-            <span>Bulk Schedule</span>
+            <span>YouTube Bulk</span>
+          </Link>
+          <Link
+            href={`/tasks/gdrive-planner?courseId=${course.id}`}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl transition-colors shadow-xs"
+          >
+            <HardDrive className="w-4 h-4" />
+            <span>GDrive Planner</span>
           </Link>
         </div>
       </div>
@@ -238,8 +248,18 @@ export default function CourseDetailPage() {
                 className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-slate-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer transition-all hover:shadow-md"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-red-600 uppercase tracking-wider">
-                    <span>{t.subject}</span>
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+                    {t.videoType === "GDRIVE" || t.youtubeUrl?.includes("drive.google.com") ? (
+                      <span className="flex items-center gap-1 text-blue-600 font-bold">
+                        <GoogleDriveIcon className="w-3.5 h-3.5" />
+                        <span>{t.subject}</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-red-600 font-bold">
+                        <YouTubeIcon className="w-3.5 h-3.5 text-red-600" />
+                        <span>{t.subject}</span>
+                      </span>
+                    )}
                     <span>•</span>
                     <span className="flex items-center gap-1 text-slate-500 font-normal">
                       <Clock className="w-3 h-3" />

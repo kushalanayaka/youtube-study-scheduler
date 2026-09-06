@@ -27,6 +27,7 @@ export interface SendTelegramParams {
   youtubeUrl: string;
   scheduledTime: string;
   taskId: string;
+  videoType?: string;
 }
 
 export async function sendTelegramReminder(params: SendTelegramParams): Promise<{ success: boolean; error?: string }> {
@@ -39,12 +40,15 @@ export async function sendTelegramReminder(params: SendTelegramParams): Promise<
     return { success: false, error: errorMsg };
   }
 
+  const isGDrive = params.videoType === "GDRIVE" || params.youtubeUrl.includes("drive.google.com");
+  const watchLabel = isGDrive ? "📁 <b>Watch on Google Drive</b>" : "🎥 <b>Watch on YouTube</b>";
+
   const messageText = `📚 <b>${escapeHtml(params.courseName)} Study Reminder</b>\n\n` +
     `<b>Subject:</b> ${escapeHtml(params.subject)}\n` +
     `<b>Topic:</b> ${escapeHtml(params.topic)}\n` +
     `<b>Time:</b> ${escapeHtml(params.scheduledTime)}\n\n` +
     `Your scheduled study session is starting now!\n\n` +
-    `🎥 <a href="${params.youtubeUrl}"><b>Watch on YouTube</b></a>`;
+    `<a href="${params.youtubeUrl}">${watchLabel}</a>`;
 
   try {
     const url = `https://api.telegram.org/bot${token}/sendMessage`;

@@ -7,6 +7,9 @@ import { YouTubeIcon } from "@/components/ui/YouTubeIcon";
 import Image from "next/image";
 import { useToast } from "@/components/ui/Toast";
 
+import { GoogleDriveIcon } from "@/components/ui/GoogleDriveIcon";
+import { detectVideoProvider } from "@/lib/gdrive";
+
 interface CourseOption {
   id: string;
   name: string;
@@ -37,6 +40,9 @@ function CreateTaskForm() {
 
   const { showToast } = useToast();
 
+  const providerInfo = detectVideoProvider(youtubeUrl);
+  const isGDrive = providerInfo.provider === "GDRIVE";
+
   const fetchCourses = useCallback(async () => {
     try {
       const res = await fetch("/api/courses");
@@ -59,6 +65,12 @@ function CreateTaskForm() {
 
   const handleUrlBlur = async () => {
     if (!youtubeUrl.trim()) return;
+
+    if (isGDrive) {
+      showToast("Google Drive video URL detected! 📁", "info");
+      return;
+    }
+
     setFetchingMetadata(true);
     try {
       const res = await fetch(`/api/youtube/oembed?url=${encodeURIComponent(youtubeUrl)}`);
@@ -68,7 +80,7 @@ function CreateTaskForm() {
           setPreviewTitle(data.metadata.title);
           setPreviewThumbnail(data.metadata.thumbnailUrl);
           if (!topic) setTopic(data.metadata.title);
-          showToast("Video metadata fetched!", "info");
+          showToast("YouTube metadata fetched!", "info");
         }
       }
     } catch (err) {
@@ -119,7 +131,7 @@ function CreateTaskForm() {
     <div className="max-w-2xl mx-auto space-y-6 py-2">
       <div>
         <h1 className="text-3xl font-extrabold text-slate-900">Schedule Single Study Video</h1>
-        <p className="text-slate-500 text-sm">Add a YouTube video to your study plan and get a free Telegram reminder.</p>
+        <p className="text-slate-500 text-sm">Add a YouTube or Google Drive video to your study plan and get a free Telegram reminder.</p>
       </div>
 
       {error && (
@@ -184,13 +196,22 @@ function CreateTaskForm() {
 
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <YouTubeIcon className="w-4 h-4 text-red-600" />
-            <span>YouTube URL</span>
+            {isGDrive ? (
+              <span className="flex items-center gap-1.5 text-blue-600">
+                <GoogleDriveIcon className="w-4 h-4" />
+                <span>Google Drive Video URL</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-red-600">
+                <YouTubeIcon className="w-4 h-4" />
+                <span>YouTube or Google Drive URL</span>
+              </span>
+            )}
           </label>
           <input
             type="url"
             required
-            placeholder="https://www.youtube.com/watch?v=..."
+            placeholder="https://www.youtube.com/watch?v=... or https://drive.google.com/file/d/..."
             value={youtubeUrl}
             onChange={(e) => setYoutubeUrl(e.target.value)}
             onBlur={handleUrlBlur}

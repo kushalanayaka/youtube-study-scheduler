@@ -5,10 +5,15 @@ export interface SendEmailParams {
   topic: string;
   youtubeUrl: string;
   scheduledTime: string;
+  videoType?: string;
 }
 
 export async function sendEmailReminder(params: SendEmailParams): Promise<{ success: boolean; error?: string }> {
   const resendApiKey = process.env.RESEND_API_KEY;
+
+  const isGDrive = params.videoType === "GDRIVE" || params.youtubeUrl.includes("drive.google.com");
+  const buttonBg = isGDrive ? "#0066DA" : "#ef4444";
+  const buttonLabel = isGDrive ? "📁 Watch on Google Drive" : "🎥 Watch on YouTube";
 
   if (resendApiKey) {
     try {
@@ -24,7 +29,7 @@ export async function sendEmailReminder(params: SendEmailParams): Promise<{ succ
           subject: `📚 Study Reminder: ${params.subject} - ${params.topic}`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-              <h2 style="color: #ef4444; margin-top: 0;">📚 ${params.courseName} Study Reminder</h2>
+              <h2 style="color: ${buttonBg}; margin-top: 0;">📚 ${params.courseName} Study Reminder</h2>
               <p>Your scheduled study session is starting now!</p>
               <div style="background-color: #f3f4f6; padding: 16px; border-radius: 6px; margin: 16px 0;">
                 <p style="margin: 4px 0;"><strong>Subject:</strong> ${params.subject}</p>
@@ -32,8 +37,8 @@ export async function sendEmailReminder(params: SendEmailParams): Promise<{ succ
                 <p style="margin: 4px 0;"><strong>Time:</strong> ${params.scheduledTime}</p>
               </div>
               <p style="margin-top: 24px;">
-                <a href="${params.youtubeUrl}" target="_blank" style="background-color: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                  🎥 Watch on YouTube
+                <a href="${params.youtubeUrl}" target="_blank" style="background-color: ${buttonBg}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  ${buttonLabel}
                 </a>
               </p>
             </div>
