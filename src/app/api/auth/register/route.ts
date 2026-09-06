@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, timezone } = await req.json();
-
-    if (!name || !email || !password) {
+    const body = await req.json().catch(() => null);
+    if (!body || !body.name || !body.email || !body.password) {
       return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = String(body.email).toLowerCase().trim();
 
     const existingUser = await prisma.user.findUnique({
       where: { email: cleanEmail },
@@ -20,20 +20,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "An account with this email already exists" }, { status: 400 });
     }
 
-    const passwordHash = await hashPassword(password);
+    const passwordHash = await hashPassword(body.password);
 
     const user = await prisma.user.create({
       data: {
-        name,
+        name: body.name,
         email: cleanEmail,
         passwordHash,
-        timezone: timezone || "Asia/Kolkata",
+        timezone: body.timezone || "Asia/Kolkata",
       },
     });
 
     const token = await signToken({ userId: user.id, email: user.email });
 
-    const response = NextResponse.json({
+    const cookieStore = await cookies();
+    cookieStore.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    });
+
+    return NextResponse.json({
       user: {
         id: user.id,
         name: user.name,
@@ -42,17 +51,7 @@ export async function POST(req: Request) {
         timezone: user.timezone,
       },
     });
-
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/",
-    });
-
-    return response;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Register Error:", err);
     return NextResponse.json({ error: "Failed to register user" }, { status: 500 });
   }
