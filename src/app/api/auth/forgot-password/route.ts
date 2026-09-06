@@ -54,8 +54,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(responsePayload);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Forgot password server error:", err);
-    return NextResponse.json({ error: "Failed to process password reset request." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process password reset request.", debugError: String(err?.stack || err?.message || err) }, { status: 500 });
   }
 }
