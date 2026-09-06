@@ -4,28 +4,39 @@ import { verifyPassword, signToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
-
-    if (!email || !password) {
+    const body = await req.json().catch(() => null);
+    if (!body || !body.email || !body.password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = String(body.email).toLowerCase().trim();
 
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+    } catch (dbErr: any) {
+      console.error("[Login Database Lookup Error]:", dbErr?.message || dbErr);
+      return NextResponse.json({ error: "Database error during login. Please try again." }, { status: 500 });
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    const isPasswordValid = await verifyPassword(password, user.passwordHash);
+    const isPasswordValid = await verifyPassword(body.password, user.passwordHash);
     if (!isPasswordValid) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    const token = await signToken({ userId: user.id, email: user.email });
+    let token;
+    try {
+      token = await signToken({ userId: user.id, email: user.email });
+    } catch (jwtErr: any) {
+      console.error("[Login JWT Sign Error]:", jwtErr?.message || jwtErr);
+      return NextResponse.json({ error: "Authentication token error." }, { status: 500 });
+    }
 
     const response = NextResponse.json({
       user: {
@@ -46,8 +57,8 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (err) {
-    console.error("Login Error:", err);
+  } catch (err: any) {
+    console.error("[Login Unhandled Error]:", err?.message || err);
     return NextResponse.json({ error: "Failed to log in" }, { status: 500 });
   }
 }
