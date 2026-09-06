@@ -10,7 +10,13 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const host = searchParams.get("host") || process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  let host = searchParams.get("host") || process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  if (!host || host.includes("localhost")) {
+    host = "https://youtube-study-scheduler.onrender.com";
+  } else if (host.startsWith("http://")) {
+    host = host.replace("http://", "https://");
+  }
+
   const webhookUrl = `${host.replace(/\/$/, "")}/api/telegram/webhook`;
 
   try {
